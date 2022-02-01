@@ -31,7 +31,8 @@ normalstats.show()
 
 modelistpdf = pd.DataFrame([dfNormal.groupby(i).count().orderBy("count", ascending=False).first()[0] for i in dfNormal.columns])
 
-modeListsdf = spark.createDataFrame(modelistpdf.transpose())
+modeT = modelistpdf.transpose()
+modeListsdf = spark.createDataFrame(modeT)
 
 modeListsdf.show()
 #statTable = normalstats.union(modeListsdf)
