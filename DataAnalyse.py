@@ -1,43 +1,76 @@
-
 from pyspark.sql import SparkSession
 import pandas as pd
 from pyspark.sql.functions import *
-
+import os 
+import sys
+import numpy as np
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 spark = SparkSession.builder.getOrCreate()
 
-pdDataframe = pd.read_csv('nuclear_plants_small_dataset.csv')
 spDataframe = spark.read.csv('nuclear_plants_small_dataset.csv', header = True, inferSchema = True)
 
-#print(pdDataframe)
-#spDataframe.show()
 
-#For each group, show the following summary statistics for each feature
-#in a table: minimum, maximum, mean, median, mode, and variance values. For each group,
-#plot the box plot for each feature.
+dfNormal =spDataframe.where(spDataframe.Status =="Normal").drop("Status")
+dfAbnormal =spDataframe.where(spDataframe.Status =="Abnormal").drop("Status")
+#splits the dataframe into normal and abnormal
 
-dfNormal =spDataframe.where(spDataframe.Status =="Normal").select(spDataframe.columns[1:13])
-dfAbnormal =spDataframe.where(spDataframe.Status =="Abnormal")
-# dont forget.toPandas()
 
 normalstats = dfNormal.summary("mean","min", "50%", "max")
 
+pandasDF = dfNormal.toPandas()
 
-#print(dfNormal.loc[:,'Power_range_sensor_1'].mode())
+#print(pandasDF.loc[:,'Power_range_sensor_1'].mode()) 
 
-#print(dfNormal.describe(include='all'))
-
-normalstats.show()
-
-modelistpdf = pd.DataFrame([dfNormal.groupby(i).count().orderBy("count", ascending=False).first()[0] for i in dfNormal.columns])
-
-modeT = modelistpdf.transpose()
-modeListsdf = spark.createDataFrame(modeT)
-
-modeListsdf.show()
-#statTable = normalstats.union(modeListsdf)
-
-#print(statTable.toPandas)
+modelistpdf = ["mode"]
+variances = ['var']
+for i in dfNormal.columns:
+    modelistpdf.append(dfNormal.groupby(i).count().orderBy("count", ascending=False).first()[0])
+    vals = [float(row[i]) for row in dfNormal.select(i).collect()]
+    variances.append(np.var(vals))
 
 
-#get rid of the status through normal
+modepdFrame = pd.DataFrame(modelistpdf)
+df_varnorm = pd.DataFrame([variances])
+
+df_varsp = spark.createDataFrame(df_varnorm)
+
+modeListsdf = spark.createDataFrame(modepdFrame.transpose())
+statTable = normalstats.union(modeListsdf)
+
+statTable = statTable.union(df_varsp)
+print(statTable.toPandas())
+
+
+
+
+
+print("####################################################################################")
+print("###############~~~~~~~~~~~~~~~~~~~~~~~Abnormal~~~~~~~~~~~~~~~~~~~~~~~###############")
+print("####################################################################################")
+print("####################################################################################")
+normalstats2 = dfAbnormal.summary("mean","min", "50%", "max")
+
+pandasDF2 = dfAbnormal.toPandas()
+
+#print(pandasDF.loc[:,'Power_range_sensor_1'].mode()) 
+
+modelistpdf2 = ["mode"]
+variances2 = ['var']
+for i in dfAbnormal.columns:
+    modelistpdf2.append(dfAbnormal.groupby(i).count().orderBy("count", ascending=False).first()[0])
+    vals2 = [float(row[i]) for row in dfAbnormal.select(i).collect()]
+    variances2.append(np.var(vals2))
+
+
+modepdFrame2 = pd.DataFrame(modelistpdf2)
+df_varnorm2 = pd.DataFrame([variances2])
+
+df_varsp2 = spark.createDataFrame(df_varnorm2)
+
+modeListsdf2 = spark.createDataFrame(modepdFrame2.transpose())
+statTable2 = normalstats2.union(modeListsdf2)
+
+statTable2 = statTable2.union(df_varsp2)
+print(statTable2.toPandas())
