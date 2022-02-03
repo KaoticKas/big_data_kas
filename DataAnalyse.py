@@ -4,13 +4,16 @@ from pyspark.sql.functions import *
 import os 
 import sys
 import numpy as np
+import seaborn as sb
+import matplotlib.pyplot as plt
+
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 spark = SparkSession.builder.getOrCreate()
 
 spDataframe = spark.read.csv('nuclear_plants_small_dataset.csv', header = True, inferSchema = True)
-
+pdDataframe = pd.read_csv('nuclear_plants_small_dataset.csv')
 
 dfNormal =spDataframe.where(spDataframe.Status =="Normal").drop("Status")
 dfAbnormal =spDataframe.where(spDataframe.Status =="Abnormal").drop("Status")
@@ -40,16 +43,14 @@ modeListsdf = spark.createDataFrame(modepdFrame.transpose())
 statTable = normalstats.union(modeListsdf)
 
 statTable = statTable.union(df_varsp)
-print(statTable.toPandas())
+#print(statTable.toPandas())
 
 
 
-
-
-print("####################################################################################")
-print("###############~~~~~~~~~~~~~~~~~~~~~~~Abnormal~~~~~~~~~~~~~~~~~~~~~~~###############")
-print("####################################################################################")
-print("####################################################################################")
+#print("####################################################################################")
+#print("###############~~~~~~~~~~~~~~~~~~~~~~~Abnormal~~~~~~~~~~~~~~~~~~~~~~~###############")
+#print("####################################################################################")
+#print("####################################################################################")
 normalstats2 = dfAbnormal.summary("mean","min", "50%", "max")
 
 pandasDF2 = dfAbnormal.toPandas()
@@ -73,4 +74,21 @@ modeListsdf2 = spark.createDataFrame(modepdFrame2.transpose())
 statTable2 = normalstats2.union(modeListsdf2)
 
 statTable2 = statTable2.union(df_varsp2)
-print(statTable2.toPandas())
+#print(statTable2.toPandas())
+
+col_name = ["Power_range_sensor_1","Power_range_sensor_2","Power_range_sensor_3 ","Power_range_sensor_4","Pressure _sensor_1",
+"Pressure _sensor_2","Pressure _sensor_3","Pressure _sensor_4","Vibration_sensor_1","Vibration_sensor_2","Vibration_sensor_3","Vibration_sensor_4"]
+
+tempDF = spDataframe.toPandas()
+for i in col_name:
+   sb.boxplot(x='Status',y = i, data=tempDF)
+   #plt.show()
+   plt.savefig(str(i)+".png")
+   plt.clf()
+
+
+plt.figure(figsize=(16, 6))
+heatmap = sb.heatmap(tempDF.corr(),vmin=0, vmax=1, annot=True)
+
+plt.savefig('heatmap.png', dpi=300, bbox_inches='tight')
+plt.clf()
