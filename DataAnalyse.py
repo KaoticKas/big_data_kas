@@ -87,8 +87,18 @@ for i in col_name:
    plt.clf()
 
 
+print(tempDF.corr())
+
+
 plt.figure(figsize=(16, 6))
-heatmap = sb.heatmap(tempDF.corr(),vmin=0, vmax=1, annot=True)
+heatmap = sb.heatmap(tempDF.corr(), annot=True)
 
 plt.savefig('heatmap.png', dpi=300, bbox_inches='tight')
 plt.clf()
+
+
+
+
+train, test = spDataframe.randomSplit([0.7,0.3], 26)
+print(train.count())
+print(test.count())
