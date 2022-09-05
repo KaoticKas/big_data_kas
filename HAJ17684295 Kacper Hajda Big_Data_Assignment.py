@@ -1,7 +1,5 @@
 #Big Data Assignment 1
 #HAJ17684295 Kacper Hajda
-from socket import has_dualstack_ipv6
-from typing import Hashable
 from pyspark.sql import SparkSession
 import pandas as pd
 from pyspark.sql.functions import *
